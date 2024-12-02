@@ -1,4 +1,4 @@
-use std::{f32::INFINITY, fs};
+use std::fs;
 
 fn load_input(file: &str) -> Vec<Vec<i32>> {
     let contents = fs::read_to_string(file).expect("Failed to read file");
