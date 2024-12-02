@@ -24,6 +24,12 @@ def main():
         print("Error occurred creating project")
         return
 
+    Path(f"{folder_name}/input.txt").touch(exist_ok=False)
+    Path(f"{folder_name}/test_input.txt").touch(exist_ok=False)
+
+    starter_text = Path("./starter_template.rs").read_text("utf-8")
+    Path(f"{folder_name}/src/main.rs").write_text(starter_text)
+
     subprocess.Popen(f"code ./{folder_name}", shell=True)
 
 
