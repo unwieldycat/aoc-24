@@ -1,18 +1,15 @@
 use std::fs;
 
-fn load_input(file: &str) -> (Vec<i32>, Vec<i32>) {
+fn load_input(file: &str) {
     let contents = fs::read_to_string(file).expect("Failed to read file");
-
-    let mut vec1: Vec<i32> = Vec::new();
-    let mut vec2: Vec<i32> = Vec::new();
+    let mut list1: Vec<i32> = Vec::new();
+    let mut list2: Vec<i32> = Vec::new();
 
     for line in contents.lines() {
-        let values: Vec<&str> = line.split_whitespace().collect();
-        vec1.push(values[0].parse::<i32>().unwrap());
-        vec2.push(values[1].parse::<i32>().unwrap());
+        let mut split = line.split("\t");
+        list1.push(split.next().unwrap().parse().unwrap());
+        list2.push(split.next().unwrap().parse().unwrap());
     }
-
-    return (vec1, vec2);
 }
 
 fn puzzle1(list1: &mut Vec<i32>, list2: &mut Vec<i32>) {
