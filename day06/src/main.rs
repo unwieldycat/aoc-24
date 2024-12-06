@@ -1,59 +1,30 @@
 use std::fs;
 
-#[derive(Debug)]
-enum GridPosition {
-    Empty,
-    EmptyVisited,
-    Wall,
-    Guard(Direction),
-}
-
-#[derive(Debug)]
-enum Direction {
-    Up,
-    Down,
-    Left,
-    Right,
-}
-
-fn load_input(path: &str) -> Vec<Vec<GridPosition>> {
+fn load_input(path: &str) -> Vec<Vec<String>> {
     let contents = fs::read_to_string(path).expect("Failed to read file");
-    let mut grid: Vec<Vec<GridPosition>> = Vec::new();
+    let mut grid: Vec<Vec<String>> = Vec::new();
 
     for line in contents.lines() {
         grid.push(
             line.split("")
                 .filter(|s| !s.is_empty())
-                .map(|s| match s {
-                    "." => GridPosition::Empty,
-                    "#" => GridPosition::Wall,
-                    "^" => GridPosition::Guard(Direction::Up),
-                    "v" => GridPosition::Guard(Direction::Down),
-                    "<" => GridPosition::Guard(Direction::Left),
-                    ">" => GridPosition::Guard(Direction::Right),
-                    other => {
-                        println!("Unexpected character {}", other);
-                        GridPosition::Empty
-                    }
-                })
+                .map(|s| String::from(s))
                 .collect(),
-        );
+        )
     }
 
     grid
 }
 
-fn get_guard(grid: &Vec<Vec<GridPosition>>) -> ((usize, usize), Direction) {
+fn get_guard_pos(grid: &Vec<Vec<String>>) -> (usize, usize) {
     let mut guard_loc = (0, 0); // row, col
-
-    // TODO: Refactor to get position of guard
 
     // Find initial guard position
     for i in 0..grid.len() {
         let row = &grid[i];
         let pos_opt = row
             .iter()
-            .position(|pos| matches!(pos, GridPosition::Guard(_)));
+            .position(|pos| pos == "^" || pos == "v" || pos == "<" || pos == ">");
 
         if pos_opt.is_none() {
             continue;
@@ -66,34 +37,85 @@ fn get_guard(grid: &Vec<Vec<GridPosition>>) -> ((usize, usize), Direction) {
     guard_loc
 }
 
-fn puzzle1(grid: &Vec<Vec<GridPosition>>) -> i32 {
-    // Get initial guard position
-    let mut guard = get_guard(grid);
+fn rotate(guard: &str) -> &str {
+    return match guard {
+        "^" => ">",
+        ">" => "v",
+        "v" => "<",
+        "<" => "^",
+        _ => {
+            panic!("invalid rotation");
+        }
+    };
+}
+
+fn get_next(guard: &str, pos: (usize, usize)) -> (usize, usize) {
+    match guard {
+        "^" => (pos.0 - 1, pos.1),
+        ">" => (pos.0, pos.1 + 1),
+        "v" => (pos.0 + 1, pos.1),
+        "<" => (pos.0, pos.1 - 1),
+        _ => {
+            panic!("invalid guard");
+        }
+    }
+}
+
+fn get_value(grid: &Vec<Vec<String>>, row: usize, col: usize) -> Option<&String> {
+    let row_val_opt = grid.get(row);
+    if row_val_opt.is_none() {
+        return None;
+    } else {
+        let col_val_opt = row_val_opt.unwrap().get(col);
+        if col_val_opt.is_none() {
+            return None;
+        }
+        return Some(col_val_opt.unwrap());
+    }
+}
+
+fn puzzle1(grid: &mut Vec<Vec<String>>) -> i32 {
+    let mut guard_pos = get_guard_pos(grid);
+    let mut guard: String = grid
+        .get(guard_pos.0)
+        .expect("bruh 1")
+        .get(guard_pos.1)
+        .expect("bruh 2")
+        .clone();
 
     loop {
-        // TODO:
-        // get type of guard
-        //  for each direction:
-        //
-        //    if can move in that direction
-        //      if out of bounds then break loop
-        //      move and set previous location to visited
-        //
-        //    if cannot move, rotate guard in place and continue
+        let next_pos = get_next(&guard, guard_pos);
+        let next_val = get_value(grid, next_pos.0, next_pos.1);
+
+        if next_val.is_none() {
+            println!("break!");
+            grid[guard_pos.0][guard_pos.1] = "X".to_owned();
+            break;
+        } else if next_val.unwrap() == "#" {
+            println!("rotating at {} {}", guard_pos.0, guard_pos.1);
+            guard = rotate(guard.as_str()).to_owned();
+            grid[guard_pos.0][guard_pos.1] = guard.clone();
+        } else {
+            println!("going to {} {}", next_pos.0, next_pos.1);
+            grid[guard_pos.0][guard_pos.1] = "X".to_owned();
+            grid[next_pos.0][next_pos.1] = guard.clone();
+            guard_pos = (next_pos.0, next_pos.1);
+        }
     }
 
-    // count all visited spots in grid
-    // return that
+    let mut sum = 0;
+    for row in grid {
+        sum += row.iter().filter(|s| s == &&"X".to_owned()).count();
+    }
 
-    1
+    sum as i32
 }
 
 fn puzzle2() {}
 
 fn main() {
-    let input = load_input("./test_input.txt");
-    //println!("{:?}", input);
-    println!("Puzzle 1: {}", puzzle1(&input));
+    let mut input = load_input("./input.txt");
+    println!("Puzzle 1: {}", puzzle1(&mut input));
     //println!("Puzzle 2: {}", puzzle2(&input));
 }
 
@@ -103,8 +125,8 @@ mod tests {
 
     #[test]
     fn test_puzzle1() {
-        let test_input = load_input("./test_input.txt");
-        assert_eq!(41, puzzle1(&test_input));
+        let mut test_input = load_input("./test_input.txt");
+        assert_eq!(41, puzzle1(&mut test_input));
     }
 
     /* #[test]
