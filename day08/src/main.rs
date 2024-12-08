@@ -1,3 +1,4 @@
+use gcd::Gcd;
 use std::{
     collections::{HashMap, HashSet},
     fs,
@@ -53,15 +54,21 @@ fn get_distance(p1: &Point, p2: &Point) -> (i32, i32) {
     ((p2.x - p1.x), (p2.y - p1.y))
 }
 
+fn get_distance_least(p1: &Point, p2: &Point) -> (i32, i32) {
+    let dx = p2.x - p1.x;
+    let dy = p2.y - p1.y;
+    let d = (dy.abs() as u32).gcd(dx.abs() as u32);
+
+    println!("{}/{} for {}/{}", dy / d as i32, dx / d as i32, dy, dx);
+
+    (dx / d as i32, dy / d as i32)
+}
+
 fn within_bounds(point: &Point, upper: &Point) -> bool {
     point.x <= upper.x && point.y <= upper.y && point.x >= 0 && point.y >= 0
 }
 
-fn make_antinodes(
-    data: &HashMap<char, Vec<Point>>,
-    max_point: &Point,
-    part2: bool,
-) -> HashSet<Point> {
+fn puzzle1(data: &HashMap<char, Vec<Point>>, max_point: &Point) -> i32 {
     let mut antinodes: HashSet<Point> = HashSet::new();
 
     for map in data {
@@ -73,7 +80,7 @@ fn make_antinodes(
 
                 let dist = get_distance(p0, p1);
 
-                let mut antinode = Point {
+                let antinode = Point {
                     x: p0.x + (dist.0 * 2),
                     y: p0.y + (dist.1 * 2),
                 };
@@ -82,17 +89,35 @@ fn make_antinodes(
                     continue;
                 }
 
-                if !part2 {
-                    antinodes.insert(antinode);
+                antinodes.insert(antinode);
+            }
+        }
+    }
+
+    antinodes.len() as i32
+}
+
+fn puzzle2(data: &HashMap<char, Vec<Point>>, max_point: &Point) -> i32 {
+    let mut antinodes: HashSet<Point> = HashSet::new();
+
+    for map in data {
+        for p0 in map.1 {
+            for p1 in map.1 {
+                if p0.x == p1.x && p0.y == p1.y {
                     continue;
                 }
 
+                let dist = get_distance_least(p0, p1);
+
                 antinodes.insert(p0.clone());
-                // TODO: Antinodes between antennae
                 antinodes.insert(p1.clone());
 
+                let mut antinode = Point {
+                    x: p0.x + dist.0,
+                    y: p0.y + dist.1,
+                };
+
                 while within_bounds(&antinode, max_point) {
-                    println!("{:?}", antinode);
                     antinodes.insert(antinode);
                     antinode = Point {
                         x: antinode.x + dist.0,
@@ -100,15 +125,12 @@ fn make_antinodes(
                     };
                 }
 
-                // below might not be necessary
-
                 antinode = Point {
-                    x: p0.x - dist.0,
-                    y: p0.y - dist.1,
+                    x: p1.x - dist.0,
+                    y: p1.y - dist.1,
                 };
 
                 while within_bounds(&antinode, max_point) {
-                    println!("{:?}", antinode);
                     antinodes.insert(antinode);
                     antinode = Point {
                         x: antinode.x - dist.0,
@@ -119,16 +141,6 @@ fn make_antinodes(
         }
     }
 
-    antinodes
-}
-
-fn puzzle1(data: &HashMap<char, Vec<Point>>, max_point: &Point) -> i32 {
-    let antinodes = make_antinodes(data, max_point, false);
-    antinodes.len() as i32
-}
-
-fn puzzle2(data: &HashMap<char, Vec<Point>>, max_point: &Point) -> i32 {
-    let antinodes = make_antinodes(data, max_point, true);
     antinodes.len() as i32
 }
 
