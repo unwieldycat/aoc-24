@@ -14,11 +14,9 @@ fn load_input(path: &str) -> (Point, HashMap<char, Vec<Point>>) {
     let contents = fs::read_to_string(path).expect("Failed to read file");
 
     let mut antennae_map: HashMap<char, Vec<Point>> = HashMap::new();
-
-    let mut max_point: Point;
     let mut max_x = 0;
-
     let mut y = 0;
+
     for line in contents.lines() {
         let chars: Vec<char> = line
             .split("")
@@ -50,20 +48,6 @@ fn load_input(path: &str) -> (Point, HashMap<char, Vec<Point>>) {
     )
 }
 
-fn get_distance(p1: &Point, p2: &Point) -> (i32, i32) {
-    ((p2.x - p1.x), (p2.y - p1.y))
-}
-
-fn get_distance_least(p1: &Point, p2: &Point) -> (i32, i32) {
-    let dx = p2.x - p1.x;
-    let dy = p2.y - p1.y;
-    let d = (dy.abs() as u32).gcd(dx.abs() as u32);
-
-    println!("{}/{} for {}/{}", dy / d as i32, dx / d as i32, dy, dx);
-
-    (dx / d as i32, dy / d as i32)
-}
-
 fn within_bounds(point: &Point, upper: &Point) -> bool {
     point.x <= upper.x && point.y <= upper.y && point.x >= 0 && point.y >= 0
 }
@@ -78,18 +62,17 @@ fn puzzle1(data: &HashMap<char, Vec<Point>>, max_point: &Point) -> i32 {
                     continue;
                 }
 
-                let dist = get_distance(p0, p1);
+                let dx = p1.x - p0.x;
+                let dy = p1.y - p0.y;
 
                 let antinode = Point {
-                    x: p0.x + (dist.0 * 2),
-                    y: p0.y + (dist.1 * 2),
+                    x: p0.x + (dx * 2),
+                    y: p0.y + (dy * 2),
                 };
 
-                if !within_bounds(&antinode, &max_point) {
-                    continue;
+                if within_bounds(&antinode, &max_point) {
+                    antinodes.insert(antinode);
                 }
-
-                antinodes.insert(antinode);
             }
         }
     }
@@ -107,34 +90,38 @@ fn puzzle2(data: &HashMap<char, Vec<Point>>, max_point: &Point) -> i32 {
                     continue;
                 }
 
-                let dist = get_distance_least(p0, p1);
+                // Simplify slope
+                let mut dx = p1.x - p0.x;
+                let mut dy = p1.y - p0.y;
+                let d = (dy.abs() as u32).gcd(dx.abs() as u32);
+                dx /= d as i32;
+                dy /= d as i32;
 
-                antinodes.insert(p0.clone());
-                antinodes.insert(p1.clone());
-
+                // Get antinodes in positive direction
                 let mut antinode = Point {
-                    x: p0.x + dist.0,
-                    y: p0.y + dist.1,
+                    x: p0.x + dx,
+                    y: p0.y + dy,
                 };
 
                 while within_bounds(&antinode, max_point) {
                     antinodes.insert(antinode);
                     antinode = Point {
-                        x: antinode.x + dist.0,
-                        y: antinode.y + dist.1,
+                        x: antinode.x + dx,
+                        y: antinode.y + dy,
                     };
                 }
 
+                // Get antinodes in negative direction
                 antinode = Point {
-                    x: p1.x - dist.0,
-                    y: p1.y - dist.1,
+                    x: p1.x - dx,
+                    y: p1.y - dy,
                 };
 
                 while within_bounds(&antinode, max_point) {
                     antinodes.insert(antinode);
                     antinode = Point {
-                        x: antinode.x - dist.0,
-                        y: antinode.y - dist.1,
+                        x: antinode.x - dx,
+                        y: antinode.y - dy,
                     };
                 }
             }
