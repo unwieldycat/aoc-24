@@ -3,7 +3,7 @@ use std::{
     fs,
 };
 
-#[derive(Debug, Eq, Hash, PartialEq)]
+#[derive(Debug, Eq, Hash, PartialEq, Clone, Copy)]
 struct Point {
     x: i32,
     y: i32,
@@ -53,6 +53,10 @@ fn get_distance(p1: &Point, p2: &Point) -> (i32, i32) {
     ((p2.x - p1.x), (p2.y - p1.y))
 }
 
+fn within_bounds(point: &Point, upper: &Point) -> bool {
+    point.x <= upper.x && point.y <= upper.y && point.x >= 0 && point.y >= 0
+}
+
 fn make_antinodes(
     data: &HashMap<char, Vec<Point>>,
     max_point: &Point,
@@ -69,20 +73,48 @@ fn make_antinodes(
 
                 let dist = get_distance(p0, p1);
 
-                let antinode = Point {
+                let mut antinode = Point {
                     x: p0.x + (dist.0 * 2),
                     y: p0.y + (dist.1 * 2),
                 };
 
-                if antinode.x > max_point.x
-                    || antinode.y > max_point.y
-                    || antinode.x < 0
-                    || antinode.y < 0
-                {
+                if !within_bounds(&antinode, &max_point) {
                     continue;
                 }
 
-                antinodes.insert(antinode);
+                if !part2 {
+                    antinodes.insert(antinode);
+                    continue;
+                }
+
+                antinodes.insert(p0.clone());
+                // TODO: Antinodes between antennae
+                antinodes.insert(p1.clone());
+
+                while within_bounds(&antinode, max_point) {
+                    println!("{:?}", antinode);
+                    antinodes.insert(antinode);
+                    antinode = Point {
+                        x: antinode.x + dist.0,
+                        y: antinode.y + dist.1,
+                    };
+                }
+
+                // below might not be necessary
+
+                antinode = Point {
+                    x: p0.x - dist.0,
+                    y: p0.y - dist.1,
+                };
+
+                while within_bounds(&antinode, max_point) {
+                    println!("{:?}", antinode);
+                    antinodes.insert(antinode);
+                    antinode = Point {
+                        x: antinode.x - dist.0,
+                        y: antinode.y - dist.1,
+                    };
+                }
             }
         }
     }
@@ -103,7 +135,7 @@ fn puzzle2(data: &HashMap<char, Vec<Point>>, max_point: &Point) -> i32 {
 fn main() {
     let input = load_input("./input.txt");
     println!("Puzzle 1: {}", puzzle1(&input.1, &input.0));
-    println!("Puzzle 2: {}", puzzle1(&input.1, &input.0));
+    println!("Puzzle 2: {}", puzzle2(&input.1, &input.0));
 }
 
 #[cfg(test)]
@@ -119,6 +151,6 @@ mod tests {
     #[test]
     fn test_puzzle2() {
         let test_input = load_input("./test_input.txt");
-        assert_eq!(32, puzzle2(&test_input.1, &test_input.0));
+        assert_eq!(34, puzzle2(&test_input.1, &test_input.0));
     }
 }
