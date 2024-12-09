@@ -67,13 +67,12 @@ fn puzzle2(disk: &Vec<String>) -> u64 {
     let mut blocks: Vec<(String, u64)> = Vec::new();
 
     let mut block: (String, u64) = ("".to_string(), 0);
-    let mut new_block = true;
+    let mut first_run = true;
 
-    // problem here somewhere, output is wrong
     for val in disk {
-        if new_block {
+        if first_run {
             block = (val.clone(), 1);
-            new_block = false;
+            first_run = false;
             continue;
         }
 
@@ -81,60 +80,87 @@ fn puzzle2(disk: &Vec<String>) -> u64 {
             block.1 += 1;
         } else {
             blocks.push(block.clone());
-            new_block = true;
+            block = (val.clone(), 1);
         }
     }
-
-    // start: 00...111...2...333.44.5555.6666.777.888899
-    // res:   00992111777.44.333....5555.6666.....8888..
 
     blocks.push(block.clone());
 
-    // this broken too
-    println!("b4: {:?}", blocks);
-    for si in 0..blocks.len() {
-        println!("{:?}", blocks);
-        if !(blocks[si].0 == ".") {
+    let mut ei = blocks.len() - 1;
+    'outer: loop {
+        let end_val = blocks[ei].clone();
+        if end_val.0 == "." {
+            ei -= 1;
             continue;
         }
-        let space_len = blocks[si].1;
-        for ei in (0..blocks.len()).rev() {
+        let mut si = 0;
+        while si < blocks.len() {
             if ei < si {
                 break;
             }
-            let end_val = &blocks[ei].clone();
-            if end_val.0 == "." || end_val.1 > space_len {
+            let start_val = blocks[si].clone();
+            if start_val.0 != "." || start_val.1 < end_val.1 {
+                si += 1;
                 continue;
             }
 
+            // swap success
             blocks[si] = end_val.clone();
-            blocks[ei] = (".".to_string(), space_len - end_val.1);
-
-            if end_val.1 != space_len {
-                println!("Insertion at {}", si + 1);
-                blocks.insert(si + 1, (".".to_string(), space_len - end_val.1));
+            blocks[ei] = (".".to_string(), end_val.1);
+            if end_val.1 != start_val.1 {
+                blocks.insert(si + 1, (".".to_string(), start_val.1 - end_val.1));
+                continue 'outer;
             }
-
             break;
         }
+        if ei == 0 {
+            break;
+        }
+        ei -= 1;
     }
 
-    println!("{:?}", blocks);
-
-    let mut checksum: u64 = 0;
-
-    for i in 0..blocks.len() {
-        if blocks[i].0 == "." {
+    // Merge redundant entries
+    let mut index = 0;
+    let mut prev_value = ("".to_string(), 0);
+    first_run = true;
+    while index < blocks.len() {
+        if first_run {
+            prev_value = blocks[index].clone();
+            first_run = false;
+            index += 1;
             continue;
         }
-        checksum += i as u64 * blocks[i].0.parse::<u64>().expect("Not a digit");
+        let value = blocks[index].clone();
+        if value.0 == prev_value.0 {
+            // update prev index, remove this index, don't iterate
+            blocks[index - 1] = (value.0.to_string(), value.1 + prev_value.1);
+            blocks.remove(index);
+            prev_value = blocks[index - 1].clone();
+            continue;
+        }
+        prev_value = value;
+        index += 1;
+    }
+    let mut checksum: u64 = 0;
+    let mut true_index: u64 = 0;
+    for i in 0..blocks.len() {
+        let len = blocks[i].1;
+        if blocks[i].0 == "." {
+            true_index += len;
+            continue;
+        }
+        let cloned_t_index = true_index.clone();
+        while true_index < cloned_t_index + len {
+            checksum += true_index as u64 * blocks[i].0.parse::<u64>().expect("Not a digit");
+            true_index += 1;
+        }
     }
 
     checksum
 }
 
 fn main() {
-    let input = load_input("./test_input.txt");
+    let input = load_input("./input.txt");
     println!("Puzzle 1: {}", puzzle1(&input));
     println!("Puzzle 2: {}", puzzle2(&input));
 }
