@@ -14,7 +14,7 @@ fn load_input(path: &str) -> Vec<Vec<i32>> {
     vec
 }
 
-fn traverse(prev_value: i32, pos: (i32, i32), grid: &Vec<Vec<i32>>) -> HashSet<(i32, i32)> {
+fn traverse_1(prev_value: i32, pos: (i32, i32), grid: &Vec<Vec<i32>>) -> HashSet<(i32, i32)> {
     if pos.0 < 0
         || pos.1 < 0
         || pos.1 >= grid.len() as i32
@@ -46,7 +46,7 @@ fn traverse(prev_value: i32, pos: (i32, i32), grid: &Vec<Vec<i32>>) -> HashSet<(
                 && dir.1 < grid.len() as i32
                 && dir.0 < grid[dir.1 as usize].len() as i32
             {
-                for val in traverse(this_value, dir, grid) {
+                for val in traverse_1(this_value, dir, grid) {
                     ends.insert(val);
                 }
             }
@@ -71,18 +71,77 @@ fn puzzle1(grid: &Vec<Vec<i32>>) -> i32 {
 
     let mut score_sum: i32 = 0;
     for zero in zeroes {
-        score_sum += traverse(-1, zero, grid).iter().count() as i32;
+        score_sum += traverse_1(-1, zero, grid).iter().count() as i32;
     }
 
     score_sum
 }
 
-fn puzzle2() {}
+// I did this in part 1 initially, I'm so glad VSCode has a ton of undo states
+fn traverse_2(prev_value: i32, pos: (i32, i32), grid: &Vec<Vec<i32>>) -> i32 {
+    if pos.0 < 0
+        || pos.1 < 0
+        || pos.1 >= grid.len() as i32
+        || pos.0 >= grid[pos.1 as usize].len() as i32
+    {
+        return 0;
+    }
+
+    let this_value: i32 = grid[pos.1 as usize][pos.0 as usize];
+
+    let mut sum: i32 = 0;
+
+    if this_value != prev_value + 1 {
+        return 0;
+    } else if this_value == 9 {
+        return 1;
+    } else {
+        let directions = vec![
+            (pos.0 + 1, pos.1),
+            (pos.0 - 1, pos.1),
+            (pos.0, pos.1 + 1),
+            (pos.0, pos.1 - 1),
+        ];
+
+        for dir in directions {
+            if dir.0 >= 0
+                && dir.1 >= 0
+                && dir.1 < grid.len() as i32
+                && dir.0 < grid[dir.1 as usize].len() as i32
+            {
+                sum += traverse_2(this_value, dir, grid);
+            }
+        }
+    }
+
+    return sum;
+}
+
+fn puzzle2(grid: &Vec<Vec<i32>>) -> i32 {
+    // Find zeroes
+    let mut zeroes: Vec<(i32, i32)> = Vec::new();
+    for y in 0..grid.len() {
+        let line = &grid[y];
+        for x in 0..line.len() {
+            if line[x] != 0 {
+                continue;
+            }
+            zeroes.push((x as i32, y as i32));
+        }
+    }
+
+    let mut score_sum: i32 = 0;
+    for zero in zeroes {
+        score_sum += traverse_2(-1, zero, grid);
+    }
+
+    score_sum
+}
 
 fn main() {
     let input = load_input("./input.txt");
     println!("Puzzle 1: {}", puzzle1(&input));
-    //println!("Puzzle 2: {}", puzzle2(&input));
+    println!("Puzzle 2: {}", puzzle2(&input));
 }
 
 #[cfg(test)]
@@ -95,9 +154,9 @@ mod tests {
         assert_eq!(36, puzzle1(&test_input));
     }
 
-    // #[test]
-    // fn test_puzzle2() {
-    //     let test_input = load_input("./test_input.txt");
-    //     assert_eq!(1, puzzle2(&test_input));
-    // }
+    #[test]
+    fn test_puzzle2() {
+        let test_input = load_input("./test_input.txt");
+        assert_eq!(81, puzzle2(&test_input));
+    }
 }
