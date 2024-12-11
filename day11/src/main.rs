@@ -9,12 +9,10 @@ fn load_input(path: &str) -> Vec<i64> {
     stones
 }
 
-const BLINK_TIMES: i64 = 75;
-
-fn puzzle(stones: &Vec<i64>) -> i64 {
+fn puzzle(stones: &Vec<i64>, blink_times: i64) -> i64 {
     let mut new_stones = stones.clone();
 
-    for i in 0..BLINK_TIMES {
+    for i in 0..blink_times {
         let mut s = 0;
         while s < new_stones.len() {
             let val = new_stones[s];
@@ -40,7 +38,8 @@ fn puzzle(stones: &Vec<i64>) -> i64 {
 
 fn main() {
     let input = load_input("./input.txt");
-    println!("Puzzle 1: {}", puzzle(&input));
+    println!("Puzzle 1: {}", puzzle(&input, 25));
+    println!("Puzzle 2: {}", puzzle(&input, 75));
 }
 
 #[cfg(test)]
@@ -50,6 +49,6 @@ mod tests {
     #[test]
     fn test_puzzle() {
         let test_input = load_input("./test_input.txt");
-        assert_eq!(55312, puzzle(&test_input));
+        assert_eq!(55312, puzzle(&test_input, 25));
     }
 }
