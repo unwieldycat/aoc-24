@@ -127,11 +127,24 @@ fn puzzle1(grid: &Vec<Vec<char>>) -> i32 {
 }
 
 fn puzzle2(grid: &Vec<Vec<char>>) -> i32 {
-    // Do same as part 1 but return sides of perimeter (somehow in order)
-    // Iterate through collection, only iterate when side changes
-    // Get all coordinates
-    // Filter so that same axis, and
-    1
+    let mut sum = 0;
+    let mut visited: HashSet<(usize, usize)> = HashSet::new();
+
+    for r in 0..grid.len() {
+        for c in 0..grid[r].len() {
+            let res = analyze_plot((c, r), grid, &mut visited);
+            let borders = res.1;
+            let mut corners: i32 = 0;
+            for border in borders {
+                if border.1.len() > 1 {
+                    corners += 1;
+                }
+            }
+            sum += res.0 * corners; // Area * perimeter
+        }
+    }
+
+    sum
 }
 
 fn main() {
@@ -150,9 +163,9 @@ mod tests {
         assert_eq!(1930, puzzle1(&test_input));
     }
 
-    // #[test]
-    // fn test_puzzle2() {
-    //     let test_input = load_input("./test_input.txt");
-    //     assert_eq!(1206, puzzle2(&test_input));
-    // }
+    #[test]
+    fn test_puzzle2() {
+        let test_input = load_input("./test_input.txt");
+        assert_eq!(1206, puzzle2(&test_input));
+    }
 }
