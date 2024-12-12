@@ -108,7 +108,10 @@ fn puzzle1(grid: &Vec<Vec<char>>) -> i32 {
     sum
 }
 
-fn puzzle2() {}
+fn puzzle2() {
+    // Do same as part 1 but return sides of perimeter (somehow in order)
+    // Iterate through vector, only iterate when side changes
+}
 
 fn main() {
     let input = load_input("./input.txt");
