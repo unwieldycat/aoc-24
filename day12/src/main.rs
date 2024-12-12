@@ -1,44 +1,19 @@
 use std::{
+    collections::HashSet,
     fmt::{self, Display},
     fs,
+    hash::Hash,
 };
 
-#[derive(Clone, Debug, Eq)]
-struct Plot {
-    pub letter: String,
-    pub visited: bool,
-}
-
-impl Plot {
-    fn new(letter: String) -> Self {
-        Self {
-            letter,
-            visited: false,
-        }
-    }
-}
-
-impl Display for Plot {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.letter)
-    }
-}
-
-impl PartialEq for Plot {
-    fn eq(&self, other: &Self) -> bool {
-        self.letter == other.letter
-    }
-}
-
-fn load_input(path: &str) -> Vec<Vec<Plot>> {
+fn load_input(path: &str) -> Vec<Vec<char>> {
     let contents = fs::read_to_string(path).expect("Failed to read file");
-    let mut grid: Vec<Vec<Plot>> = Vec::new();
+    let mut grid: Vec<Vec<char>> = Vec::new();
 
     for line in contents.lines() {
         let plots = line
             .split("")
             .filter(|s| !s.is_empty())
-            .map(|s| Plot::new(s.to_string()))
+            .map(|s| s.chars().collect::<Vec<char>>()[0])
             .collect();
 
         grid.push(plots);
@@ -49,8 +24,8 @@ fn load_input(path: &str) -> Vec<Vec<Plot>> {
 
 fn analyze_plot(
     coord: (usize, usize),
-    grid: &Vec<Vec<Plot>>,
-    area_perimeter: (i32, i32),
+    grid: &Vec<Vec<char>>,
+    visited: &mut HashSet<(usize, usize)>,
 ) -> (i32, i32) {
     // if visited return
     // get up, down, left, right
@@ -60,45 +35,64 @@ fn analyze_plot(
     // with function result, return updated perimeter and area
     // (area is += 1, perimeter is number of sides that are not the same plot)
 
-    let plot = &grid[coord.1][coord.0];
-
-    if plot.visited {
+    if visited.contains(&coord) {
         return (0, 0);
     }
+    visited.insert(coord.clone());
 
+    let plot = grid[coord.1][coord.0];
     let mut neighbors: Vec<(usize, usize)> = Vec::new();
 
+    // Up
     if coord.0 != 0 {
         neighbors.push((coord.0 - 1, coord.1));
     }
 
-    if coord.0 != grid[0].len() {
+    // Down
+    if coord.0 < grid[0].len() - 1 {
         neighbors.push((coord.0 + 1, coord.1));
     }
 
+    // Left
     if coord.1 != 0 {
         neighbors.push((coord.0, coord.1 - 1));
     }
 
-    if coord.1 != grid.len() {
+    // Right
+    if coord.1 < grid.len() - 1 {
         neighbors.push((coord.0, coord.1 + 1));
     }
 
-    (1, 1)
+    let mut area = 1;
+    let mut perimeter = 0;
+
+    for neighbor in neighbors {
+        let value_at = grid[neighbor.1][neighbor.0];
+        if value_at == plot {
+            let res = analyze_plot(neighbor, grid, visited);
+            area += res.0;
+            perimeter += res.1;
+        } else {
+            perimeter += 1;
+        }
+    }
+
+    (area, perimeter)
 }
 
-fn puzzle1(grid: &Vec<Vec<Plot>>) -> i32 {
+fn puzzle1(grid: &Vec<Vec<char>>) -> i32 {
     let mut sum = 0;
+    let mut visited: HashSet<(usize, usize)> = HashSet::new();
 
     for r in 0..grid.len() {
         for c in 0..grid[r].len() {
-            let plot = &grid[r][c];
-
-            if plot.visited {
-                continue;
+            let res = analyze_plot((c, r), grid, &mut visited);
+            if res.0 != 0 && res.1 != 0 {
+                println!(
+                    "In region {}, area: {} perimeter: {}",
+                    grid[r][c], res.0, res.1
+                );
             }
-
-            let res = analyze_plot((c, r), grid, (0, 0));
             sum += res.0 * res.1; // Area * perimeter
         }
     }
@@ -110,8 +104,7 @@ fn puzzle2() {}
 
 fn main() {
     let input = load_input("./test_input.txt");
-    println!("{:?}", &input);
-    //println!("Puzzle 1: {}", puzzle1(&input));
+    println!("Puzzle 1: {}", puzzle1(&input));
     //println!("Puzzle 2: {}", puzzle2(&input));
 }
 
@@ -119,11 +112,11 @@ fn main() {
 mod tests {
     use super::*;
 
-    // #[test]
-    // fn test_puzzle1() {
-    //     let test_input = load_input("./test_input.txt");
-    //     assert_eq!(1, puzzle1(&test_input));
-    // }
+    #[test]
+    fn test_puzzle1() {
+        let test_input = load_input("./test_input.txt");
+        assert_eq!(1930, puzzle1(&test_input));
+    }
 
     // #[test]
     // fn test_puzzle2() {
