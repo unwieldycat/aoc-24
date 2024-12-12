@@ -1,5 +1,5 @@
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashSet,
     fmt::{self, Display},
     fs,
     hash::Hash,
@@ -22,18 +22,11 @@ fn load_input(path: &str) -> Vec<Vec<char>> {
     grid
 }
 
-enum BorderSide {
-    Up,
-    Down,
-    Left,
-    Right,
-}
-
 fn analyze_plot(
     coord: (usize, usize),
     grid: &Vec<Vec<char>>,
     visited: &mut HashSet<(usize, usize)>,
-) -> (i32, HashMap<(usize, usize), Vec<BorderSide>>) {
+) -> (i32, i32) {
     // if visited return
     // get up, down, left, right
     // if up, down, left, or right out of bounds, add 1 to perimeter
@@ -43,40 +36,40 @@ fn analyze_plot(
     // (area is += 1, perimeter is number of sides that are not the same plot)
 
     if visited.contains(&coord) {
-        return (0, HashMap::default());
+        return (0, 0);
     }
     visited.insert(coord.clone());
 
     let plot = grid[coord.1][coord.0];
     let mut neighbors: Vec<(usize, usize)> = Vec::new();
-    let mut borders: HashMap<(usize, usize), Vec<BorderSide>> = HashMap::new();
+    let mut perimeter = 0;
 
     // Up
     if coord.0 != 0 {
         neighbors.push((coord.0 - 1, coord.1));
     } else {
-        borders.entry(coord).or_default().push(BorderSide::Up);
+        perimeter += 1;
     }
 
     // Down
     if coord.0 < grid[0].len() - 1 {
         neighbors.push((coord.0 + 1, coord.1));
     } else {
-        borders.entry(coord).or_default().push(BorderSide::Down);
+        perimeter += 1;
     }
 
     // Left
     if coord.1 != 0 {
         neighbors.push((coord.0, coord.1 - 1));
     } else {
-        borders.entry(coord).or_default().push(BorderSide::Left);
+        perimeter += 1;
     }
 
     // Right
     if coord.1 < grid.len() - 1 {
         neighbors.push((coord.0, coord.1 + 1));
     } else {
-        borders.entry(coord).or_default().push(BorderSide::Right);
+        perimeter += 1;
     }
 
     let mut area = 1;
@@ -86,25 +79,13 @@ fn analyze_plot(
         if value_at == plot {
             let res = analyze_plot(neighbor, grid, visited);
             area += res.0;
-            borders.extend(res.1);
+            perimeter += res.1;
         } else {
-            let x_diff = neighbor.0 as i32 - coord.0 as i32;
-            let y_diff = neighbor.1 as i32 - coord.1 as i32;
-            let direction = if x_diff < 0 {
-                BorderSide::Left
-            } else if x_diff > 0 {
-                BorderSide::Right
-            } else if y_diff < 0 {
-                BorderSide::Up
-            } else {
-                BorderSide::Down
-            };
-
-            borders.entry(coord).or_default().push(direction);
+            perimeter += 1;
         }
     }
 
-    (area, borders)
+    (area, perimeter)
 }
 
 fn puzzle1(grid: &Vec<Vec<char>>) -> i32 {
@@ -114,37 +95,22 @@ fn puzzle1(grid: &Vec<Vec<char>>) -> i32 {
     for r in 0..grid.len() {
         for c in 0..grid[r].len() {
             let res = analyze_plot((c, r), grid, &mut visited);
-            let borders = res.1;
-            let mut perimeter: i32 = 0;
-            for border in borders {
-                perimeter += border.1.len() as i32;
+            if res.0 != 0 && res.1 != 0 {
+                println!(
+                    "In region {}, area: {} perimeter: {}",
+                    grid[r][c], res.0, res.1
+                );
             }
-            sum += res.0 * perimeter; // Area * perimeter
+            sum += res.0 * res.1; // Area * perimeter
         }
     }
 
     sum
 }
 
-fn puzzle2(grid: &Vec<Vec<char>>) -> i32 {
-    let mut sum = 0;
-    let mut visited: HashSet<(usize, usize)> = HashSet::new();
-
-    for r in 0..grid.len() {
-        for c in 0..grid[r].len() {
-            let res = analyze_plot((c, r), grid, &mut visited);
-            let borders = res.1;
-            let mut corners: i32 = 0;
-            for border in borders {
-                if border.1.len() > 1 {
-                    corners += 1;
-                }
-            }
-            sum += res.0 * corners; // Area * perimeter
-        }
-    }
-
-    sum
+fn puzzle2() {
+    // Do same as part 1 but return sides of perimeter (somehow in order)
+    // Iterate through vector, only iterate when side changes
 }
 
 fn main() {
@@ -163,9 +129,9 @@ mod tests {
         assert_eq!(1930, puzzle1(&test_input));
     }
 
-    #[test]
-    fn test_puzzle2() {
-        let test_input = load_input("./test_input.txt");
-        assert_eq!(1206, puzzle2(&test_input));
-    }
+    // #[test]
+    // fn test_puzzle2() {
+    //     let test_input = load_input("./test_input.txt");
+    //     assert_eq!(1, puzzle2(&test_input));
+    // }
 }
