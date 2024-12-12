@@ -1,5 +1,5 @@
 use std::{
-    collections::HashSet,
+    collections::{HashMap, HashSet},
     fmt::{self, Display},
     fs,
     hash::Hash,
@@ -22,11 +22,18 @@ fn load_input(path: &str) -> Vec<Vec<char>> {
     grid
 }
 
+enum BorderSide {
+    Up,
+    Down,
+    Left,
+    Right,
+}
+
 fn analyze_plot(
     coord: (usize, usize),
     grid: &Vec<Vec<char>>,
     visited: &mut HashSet<(usize, usize)>,
-) -> (i32, i32) {
+) -> (i32, HashMap<(usize, usize), Vec<BorderSide>>) {
     // if visited return
     // get up, down, left, right
     // if up, down, left, or right out of bounds, add 1 to perimeter
@@ -36,40 +43,40 @@ fn analyze_plot(
     // (area is += 1, perimeter is number of sides that are not the same plot)
 
     if visited.contains(&coord) {
-        return (0, 0);
+        return (0, HashMap::default());
     }
     visited.insert(coord.clone());
 
     let plot = grid[coord.1][coord.0];
     let mut neighbors: Vec<(usize, usize)> = Vec::new();
-    let mut perimeter = 0;
+    let mut borders: HashMap<(usize, usize), Vec<BorderSide>> = HashMap::new();
 
     // Up
     if coord.0 != 0 {
         neighbors.push((coord.0 - 1, coord.1));
     } else {
-        perimeter += 1;
+        borders.entry(coord).or_default().push(BorderSide::Up);
     }
 
     // Down
     if coord.0 < grid[0].len() - 1 {
         neighbors.push((coord.0 + 1, coord.1));
     } else {
-        perimeter += 1;
+        borders.entry(coord).or_default().push(BorderSide::Down);
     }
 
     // Left
     if coord.1 != 0 {
         neighbors.push((coord.0, coord.1 - 1));
     } else {
-        perimeter += 1;
+        borders.entry(coord).or_default().push(BorderSide::Left);
     }
 
     // Right
     if coord.1 < grid.len() - 1 {
         neighbors.push((coord.0, coord.1 + 1));
     } else {
-        perimeter += 1;
+        borders.entry(coord).or_default().push(BorderSide::Right);
     }
 
     let mut area = 1;
@@ -79,13 +86,25 @@ fn analyze_plot(
         if value_at == plot {
             let res = analyze_plot(neighbor, grid, visited);
             area += res.0;
-            perimeter += res.1;
+            borders.extend(res.1);
         } else {
-            perimeter += 1;
+            let x_diff = neighbor.0 as i32 - coord.0 as i32;
+            let y_diff = neighbor.1 as i32 - coord.1 as i32;
+            let direction = if x_diff < 0 {
+                BorderSide::Left
+            } else if x_diff > 0 {
+                BorderSide::Right
+            } else if y_diff < 0 {
+                BorderSide::Up
+            } else {
+                BorderSide::Down
+            };
+
+            borders.entry(coord).or_default().push(direction);
         }
     }
 
-    (area, perimeter)
+    (area, borders)
 }
 
 fn puzzle1(grid: &Vec<Vec<char>>) -> i32 {
@@ -95,22 +114,24 @@ fn puzzle1(grid: &Vec<Vec<char>>) -> i32 {
     for r in 0..grid.len() {
         for c in 0..grid[r].len() {
             let res = analyze_plot((c, r), grid, &mut visited);
-            if res.0 != 0 && res.1 != 0 {
-                println!(
-                    "In region {}, area: {} perimeter: {}",
-                    grid[r][c], res.0, res.1
-                );
+            let borders = res.1;
+            let mut perimeter: i32 = 0;
+            for border in borders {
+                perimeter += border.1.len() as i32;
             }
-            sum += res.0 * res.1; // Area * perimeter
+            sum += res.0 * perimeter; // Area * perimeter
         }
     }
 
     sum
 }
 
-fn puzzle2() {
+fn puzzle2(grid: &Vec<Vec<char>>) -> i32 {
     // Do same as part 1 but return sides of perimeter (somehow in order)
-    // Iterate through vector, only iterate when side changes
+    // Iterate through collection, only iterate when side changes
+    // Get all coordinates
+    // Filter so that same axis, and
+    1
 }
 
 fn main() {
@@ -132,6 +153,6 @@ mod tests {
     // #[test]
     // fn test_puzzle2() {
     //     let test_input = load_input("./test_input.txt");
-    //     assert_eq!(1, puzzle2(&test_input));
+    //     assert_eq!(1206, puzzle2(&test_input));
     // }
 }
