@@ -42,29 +42,37 @@ fn analyze_plot(
 
     let plot = grid[coord.1][coord.0];
     let mut neighbors: Vec<(usize, usize)> = Vec::new();
+    let mut perimeter = 0;
 
     // Up
     if coord.0 != 0 {
         neighbors.push((coord.0 - 1, coord.1));
+    } else {
+        perimeter += 1;
     }
 
     // Down
     if coord.0 < grid[0].len() - 1 {
         neighbors.push((coord.0 + 1, coord.1));
+    } else {
+        perimeter += 1;
     }
 
     // Left
     if coord.1 != 0 {
         neighbors.push((coord.0, coord.1 - 1));
+    } else {
+        perimeter += 1;
     }
 
     // Right
     if coord.1 < grid.len() - 1 {
         neighbors.push((coord.0, coord.1 + 1));
+    } else {
+        perimeter += 1;
     }
 
     let mut area = 1;
-    let mut perimeter = 0;
 
     for neighbor in neighbors {
         let value_at = grid[neighbor.1][neighbor.0];
@@ -103,7 +111,7 @@ fn puzzle1(grid: &Vec<Vec<char>>) -> i32 {
 fn puzzle2() {}
 
 fn main() {
-    let input = load_input("./test_input.txt");
+    let input = load_input("./input.txt");
     println!("Puzzle 1: {}", puzzle1(&input));
     //println!("Puzzle 2: {}", puzzle2(&input));
 }
