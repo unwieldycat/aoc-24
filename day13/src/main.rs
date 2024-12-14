@@ -1,8 +1,12 @@
-use std::{cmp, fs, i32::MAX};
+use std::{
+    cmp::{self, Ordering},
+    fs,
+    i32::MAX,
+};
 
 use regex::Regex;
 
-#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd)]
 struct OrderedPair {
     pub x: i32,
     pub y: i32,
@@ -17,6 +21,12 @@ impl OrderedPair {
             x: self.x + other.x,
             y: self.y + other.y,
         }
+    }
+}
+
+impl Ord for OrderedPair {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.x.cmp(&other.x).then(self.y.cmp(&other.y))
     }
 }
 
@@ -82,6 +92,8 @@ fn get_prize(position: OrderedPair, cost: i32, i: i32, cabinet: &Cabinet) -> Opt
 
     if position == cabinet.prize {
         return Some(cost);
+    } else if position > cabinet.prize {
+        return None;
     }
 
     let a_pushed = get_prize(
@@ -127,11 +139,11 @@ fn main() {
 mod tests {
     use super::*;
 
-    // #[test]
-    // fn test_puzzle1() {
-    //     let test_input = load_input("./test_input.txt");
-    //     assert_eq!(1, puzzle1(&test_input));
-    // }
+    #[test]
+    fn test_puzzle1() {
+        let test_input = load_input("./test_input.txt");
+        assert_eq!(480, puzzle1(&test_input));
+    }
 
     // #[test]
     // fn test_puzzle2() {
