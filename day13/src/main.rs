@@ -1,12 +1,13 @@
 use std::{
     cmp::{self, Ordering},
+    collections::HashMap,
     fs,
     i32::MAX,
 };
 
 use regex::Regex;
 
-#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Hash)]
 struct OrderedPair {
     pub x: i32,
     pub y: i32,
@@ -85,14 +86,26 @@ const A_COST: i32 = 3;
 const B_COST: i32 = 1;
 const MAX_ITER: i32 = 100;
 
-fn get_prize(position: OrderedPair, cost: i32, i: i32, cabinet: &Cabinet) -> Option<i32> {
+fn get_prize(
+    position: OrderedPair,
+    cost: i32,
+    i: i32,
+    cabinet: &Cabinet,
+    cache: &mut HashMap<(OrderedPair, i32), Option<i32>>,
+) -> Option<i32> {
+    if let Some(cached_val) = cache.get(&(position, i)) {
+        return *cached_val;
+    }
+
     if i >= MAX_ITER {
         return None;
     }
 
     if position == cabinet.prize {
+        cache.insert((position, i), Some(cost));
         return Some(cost);
     } else if position > cabinet.prize {
+        cache.insert((position, i), None);
         return None;
     }
 
@@ -101,25 +114,31 @@ fn get_prize(position: OrderedPair, cost: i32, i: i32, cabinet: &Cabinet) -> Opt
         cost + A_COST,
         i + 1,
         cabinet,
+        cache,
     );
     let b_pushed = get_prize(
         position.sum(&cabinet.b_delta),
         cost + B_COST,
         i + 1,
         cabinet,
+        cache,
     );
 
     if a_pushed.is_none() && b_pushed.is_none() {
+        cache.insert((position, i), None);
         return None;
     }
 
-    return Some(cmp::min(a_pushed.unwrap_or(MAX), b_pushed.unwrap_or(MAX)));
+    let retval = Some(cmp::min(a_pushed.unwrap_or(MAX), b_pushed.unwrap_or(MAX)));
+    cache.insert((position, i), retval);
+    return retval;
 }
 
 fn puzzle1(cabinets: &Vec<Cabinet>) -> i32 {
     let mut cost = 0;
     for cabinet in cabinets {
-        let res = get_prize(OrderedPair::new(0, 0), 0, 0, cabinet);
+        let mut cache: HashMap<(OrderedPair, i32), Option<i32>> = HashMap::new();
+        let res = get_prize(OrderedPair::new(0, 0), 0, 0, cabinet, &mut cache);
         if let Some(c) = res {
             cost += c;
         }
