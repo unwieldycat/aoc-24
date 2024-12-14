@@ -1,28 +1,10 @@
 use regex::Regex;
-use std::{cmp::Ordering, fs};
+use std::fs;
 
-#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Hash)]
+#[derive(Default, Debug, Clone, Copy)]
 struct OrderedPair {
-    pub x: i32,
-    pub y: i32,
-}
-
-impl OrderedPair {
-    fn new(x: i32, y: i32) -> OrderedPair {
-        OrderedPair { x, y }
-    }
-    fn sum(&self, other: &OrderedPair) -> OrderedPair {
-        OrderedPair {
-            x: self.x + other.x,
-            y: self.y + other.y,
-        }
-    }
-}
-
-impl Ord for OrderedPair {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.x.cmp(&other.x).then(self.y.cmp(&other.y))
-    }
+    pub x: f64,
+    pub y: f64,
 }
 
 #[derive(Default, Debug, Clone, Copy)]
@@ -46,27 +28,25 @@ fn load_input(path: &str) -> Vec<Cabinet> {
             continue;
         }
 
-        if line.starts_with("Button A:") {
+        let is_a = line.starts_with("Button A:");
+        let is_b = line.starts_with("Button B:");
+        if is_a || is_b {
             let coord_str: &str = &line[10..];
             let coord_capture = delta_re.captures(coord_str).expect("Invalid string");
-            let x = coord_capture[1].parse::<i32>().expect("X is not a number");
-            let y = coord_capture[2].parse::<i32>().expect("Y is not a number");
-            curr_cabinet.a_delta = OrderedPair { x, y };
-        }
-
-        if line.starts_with("Button B:") {
-            let coord_str: &str = &line[10..];
-            let coord_capture = delta_re.captures(coord_str).expect("Invalid string");
-            let x = coord_capture[1].parse::<i32>().expect("X is not a number");
-            let y = coord_capture[2].parse::<i32>().expect("Y is not a number");
-            curr_cabinet.b_delta = OrderedPair { x, y };
+            let x = coord_capture[1].parse::<f64>().expect("X is not a number");
+            let y = coord_capture[2].parse::<f64>().expect("Y is not a number");
+            if is_a {
+                curr_cabinet.a_delta = OrderedPair { x, y };
+            } else {
+                curr_cabinet.b_delta = OrderedPair { x, y };
+            }
         }
 
         if line.starts_with("Prize:") {
             let coord_str: &str = &line[7..];
             let coord_capture = coord_re.captures(coord_str).expect("Invalid string");
-            let x = coord_capture[1].parse::<i32>().expect("X is not a number");
-            let y = coord_capture[2].parse::<i32>().expect("Y is not a number");
+            let x = coord_capture[1].parse::<f64>().expect("X is not a number");
+            let y = coord_capture[2].parse::<f64>().expect("Y is not a number");
             curr_cabinet.prize = OrderedPair { x, y };
         }
     }
@@ -94,15 +74,17 @@ fn solve_system(a: f64, b: f64, n1: f64, c: f64, d: f64, n2: f64) -> Option<f64>
     // Ax + B(x(mA - C) / (D - mB)) = N1
     // x(A + B((mA - C) / (D - mB))) = N1
     // x = N1 / (A + B((mA - C) / (D - mB)))
-    let x = n1 / (a + b * (((m * a) - c) / (d - (m * b))));
+    let mut x = n1 / (a + b * (((m * a) - c) / (d - (m * b))));
 
     // x == [[x]]
     if (x - x.round()).abs() < 0.00001 {
+        x = x.round();
+
         // By = N1 - Ax
         // y = (N1 - Ax) / B
-        let y = (n1 - (a * x)) / b;
+        let y = ((n1 - (a * x)) / b).round();
 
-        return Some(x.round() * A_COST as f64 + y.round() * B_COST as f64);
+        return Some(x * A_COST as f64 + y * B_COST as f64);
     }
 
     return None;
@@ -112,12 +94,12 @@ fn puzzle1(cabinets: &Vec<Cabinet>) -> i64 {
     let mut cost = 0;
     for cabinet in cabinets {
         if let Some(res) = solve_system(
-            cabinet.a_delta.x as f64,
-            cabinet.b_delta.x as f64,
-            (cabinet.prize.x as i64) as f64,
-            cabinet.a_delta.y as f64,
-            cabinet.b_delta.y as f64,
-            (cabinet.prize.y as i64) as f64,
+            cabinet.a_delta.x,
+            cabinet.b_delta.x,
+            cabinet.prize.x,
+            cabinet.a_delta.y,
+            cabinet.b_delta.y,
+            cabinet.prize.y,
         ) {
             cost += res as i64;
         }
@@ -129,12 +111,12 @@ fn puzzle2(cabinets: &Vec<Cabinet>) -> i64 {
     let mut cost = 0;
     for cabinet in cabinets {
         if let Some(res) = solve_system(
-            cabinet.a_delta.x as f64,
-            cabinet.b_delta.x as f64,
-            (cabinet.prize.x as i64 + 10000000000000) as f64,
-            cabinet.a_delta.y as f64,
-            cabinet.b_delta.y as f64,
-            (cabinet.prize.y as i64 + 10000000000000) as f64,
+            cabinet.a_delta.x,
+            cabinet.b_delta.x,
+            cabinet.prize.x + 10000000000000.0,
+            cabinet.a_delta.y,
+            cabinet.b_delta.y,
+            cabinet.prize.y + 10000000000000.0,
         ) {
             cost += res as i64;
         }
