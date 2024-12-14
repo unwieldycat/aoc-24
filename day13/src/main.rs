@@ -89,56 +89,59 @@ const MAX_ITER: i32 = 100;
 fn get_prize(
     position: OrderedPair,
     cost: i32,
-    i: i32,
+    a_i: i32,
+    b_i: i32,
     cabinet: &Cabinet,
-    cache: &mut HashMap<(OrderedPair, i32), Option<i32>>,
+    cache: &mut HashMap<(OrderedPair, i32, i32), Option<i32>>,
 ) -> Option<i32> {
-    if let Some(cached_val) = cache.get(&(position, i)) {
+    if let Some(cached_val) = cache.get(&(position, a_i, b_i)) {
         return *cached_val;
     }
 
-    if i >= MAX_ITER {
+    if a_i > MAX_ITER || b_i > MAX_ITER {
         return None;
     }
 
     if position == cabinet.prize {
-        cache.insert((position, i), Some(cost));
+        cache.insert((position, a_i, b_i), Some(cost));
         return Some(cost);
     } else if position > cabinet.prize {
-        cache.insert((position, i), None);
+        cache.insert((position, a_i, b_i), None);
         return None;
     }
 
     let a_pushed = get_prize(
         position.sum(&cabinet.a_delta),
         cost + A_COST,
-        i + 1,
+        a_i + 1,
+        b_i,
         cabinet,
         cache,
     );
     let b_pushed = get_prize(
         position.sum(&cabinet.b_delta),
         cost + B_COST,
-        i + 1,
+        a_i,
+        b_i + 1,
         cabinet,
         cache,
     );
 
     if a_pushed.is_none() && b_pushed.is_none() {
-        cache.insert((position, i), None);
+        cache.insert((position, a_i, b_i), None);
         return None;
     }
 
     let retval = Some(cmp::min(a_pushed.unwrap_or(MAX), b_pushed.unwrap_or(MAX)));
-    cache.insert((position, i), retval);
+    cache.insert((position, a_i, b_i), retval);
     return retval;
 }
 
 fn puzzle1(cabinets: &Vec<Cabinet>) -> i32 {
     let mut cost = 0;
     for cabinet in cabinets {
-        let mut cache: HashMap<(OrderedPair, i32), Option<i32>> = HashMap::new();
-        let res = get_prize(OrderedPair::new(0, 0), 0, 0, cabinet, &mut cache);
+        let mut cache: HashMap<(OrderedPair, i32, i32), Option<i32>> = HashMap::new();
+        let res = get_prize(OrderedPair::new(0, 0), 0, 0, 0, cabinet, &mut cache);
         if let Some(c) = res {
             cost += c;
         }
@@ -149,7 +152,7 @@ fn puzzle1(cabinets: &Vec<Cabinet>) -> i32 {
 fn puzzle2() {}
 
 fn main() {
-    let input = load_input("./test_input.txt");
+    let input = load_input("./input.txt");
     println!("Puzzle 1: {}", puzzle1(&input));
     //println!("Puzzle 2: {}", puzzle2(&input));
 }
