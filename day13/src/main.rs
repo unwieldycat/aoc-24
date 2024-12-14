@@ -1,11 +1,5 @@
-use std::{
-    cmp::{self, Ordering},
-    collections::HashMap,
-    fs,
-    i32::MAX,
-};
-
 use regex::Regex;
+use std::{cmp::Ordering, fs};
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Hash)]
 struct OrderedPair {
@@ -84,70 +78,6 @@ fn load_input(path: &str) -> Vec<Cabinet> {
 
 const A_COST: i32 = 3;
 const B_COST: i32 = 1;
-const MAX_ITER: i32 = 100;
-
-fn get_prize(
-    position: OrderedPair,
-    cost: i32,
-    a_i: i32,
-    b_i: i32,
-    cabinet: &Cabinet,
-    cache: &mut HashMap<(OrderedPair, i32, i32), Option<i32>>,
-) -> Option<i32> {
-    if let Some(cached_val) = cache.get(&(position, a_i, b_i)) {
-        return *cached_val;
-    }
-
-    if a_i > MAX_ITER || b_i > MAX_ITER {
-        return None;
-    }
-
-    if position == cabinet.prize {
-        cache.insert((position, a_i, b_i), Some(cost));
-        return Some(cost);
-    } else if position > cabinet.prize {
-        cache.insert((position, a_i, b_i), None);
-        return None;
-    }
-
-    let a_pushed = get_prize(
-        position.sum(&cabinet.a_delta),
-        cost + A_COST,
-        a_i + 1,
-        b_i,
-        cabinet,
-        cache,
-    );
-    let b_pushed = get_prize(
-        position.sum(&cabinet.b_delta),
-        cost + B_COST,
-        a_i,
-        b_i + 1,
-        cabinet,
-        cache,
-    );
-
-    if a_pushed.is_none() && b_pushed.is_none() {
-        cache.insert((position, a_i, b_i), None);
-        return None;
-    }
-
-    let retval = Some(cmp::min(a_pushed.unwrap_or(MAX), b_pushed.unwrap_or(MAX)));
-    cache.insert((position, a_i, b_i), retval);
-    return retval;
-}
-
-fn puzzle1(cabinets: &Vec<Cabinet>) -> i32 {
-    let mut cost = 0;
-    for cabinet in cabinets {
-        let mut cache: HashMap<(OrderedPair, i32, i32), Option<i32>> = HashMap::new();
-        let res = get_prize(OrderedPair::new(0, 0), 0, 0, 0, cabinet, &mut cache);
-        if let Some(c) = res {
-            cost += c;
-        }
-    }
-    cost
-}
 
 fn solve_system(a: f64, b: f64, n1: f64, c: f64, d: f64, n2: f64) -> Option<f64> {
     // Ax + By = N1
@@ -167,7 +97,7 @@ fn solve_system(a: f64, b: f64, n1: f64, c: f64, d: f64, n2: f64) -> Option<f64>
     let x = n1 / (a + b * (((m * a) - c) / (d - (m * b))));
 
     // x == [[x]]
-    if (x - x.round()).abs() < 0.0000001 {
+    if (x - x.round()).abs() < 0.00001 {
         // By = N1 - Ax
         // y = (N1 - Ax) / B
         let y = (n1 - (a * x)) / b;
@@ -176,6 +106,23 @@ fn solve_system(a: f64, b: f64, n1: f64, c: f64, d: f64, n2: f64) -> Option<f64>
     }
 
     return None;
+}
+
+fn puzzle1(cabinets: &Vec<Cabinet>) -> i64 {
+    let mut cost = 0;
+    for cabinet in cabinets {
+        if let Some(res) = solve_system(
+            cabinet.a_delta.x as f64,
+            cabinet.b_delta.x as f64,
+            (cabinet.prize.x as i64) as f64,
+            cabinet.a_delta.y as f64,
+            cabinet.b_delta.y as f64,
+            (cabinet.prize.y as i64) as f64,
+        ) {
+            cost += res as i64;
+        }
+    }
+    cost
 }
 
 fn puzzle2(cabinets: &Vec<Cabinet>) -> i64 {
@@ -198,7 +145,7 @@ fn puzzle2(cabinets: &Vec<Cabinet>) -> i64 {
 fn main() {
     let input = load_input("./input.txt");
 
-    //println!("Puzzle 1: {}", puzzle1(&input));
+    println!("Puzzle 1: {}", puzzle1(&input));
     println!("Puzzle 2: {}", puzzle2(&input));
 }
 
