@@ -149,12 +149,57 @@ fn puzzle1(cabinets: &Vec<Cabinet>) -> i32 {
     cost
 }
 
-fn puzzle2() {}
+fn solve_system(a: f64, b: f64, n1: f64, c: f64, d: f64, n2: f64) -> Option<f64> {
+    // Ax + By = N1
+    // Cx + Dy = N2
+    // m = N2 / N1
+    let m = n2 / n1;
+
+    // mAx + mBy = mN1
+    // mAx + mBy = N2
+    // mAx + mBy = Cx + Dy
+    // mAx - Cx = Dy - mBy
+    // x(mA - C) = y(D - mB)
+    // x(mA - C) / (D - mB) = y
+    // Ax + B(x(mA - C) / (D - mB)) = N1
+    // x(A + B((mA - C) / (D - mB))) = N1
+    // x = N1 / (A + B((mA - C) / (D - mB)))
+    let x = n1 / (a + b * (((m * a) - c) / (d - (m * b))));
+
+    // x == [[x]]
+    if (x - x.round()).abs() < 0.0000001 {
+        // By = N1 - Ax
+        // y = (N1 - Ax) / B
+        let y = (n1 - (a * x)) / b;
+
+        return Some(x.round() * A_COST as f64 + y.round() * B_COST as f64);
+    }
+
+    return None;
+}
+
+fn puzzle2(cabinets: &Vec<Cabinet>) -> i64 {
+    let mut cost = 0;
+    for cabinet in cabinets {
+        if let Some(res) = solve_system(
+            cabinet.a_delta.x as f64,
+            cabinet.b_delta.x as f64,
+            (cabinet.prize.x as i64 + 10000000000000) as f64,
+            cabinet.a_delta.y as f64,
+            cabinet.b_delta.y as f64,
+            (cabinet.prize.y as i64 + 10000000000000) as f64,
+        ) {
+            cost += res as i64;
+        }
+    }
+    cost
+}
 
 fn main() {
     let input = load_input("./input.txt");
-    println!("Puzzle 1: {}", puzzle1(&input));
-    //println!("Puzzle 2: {}", puzzle2(&input));
+
+    //println!("Puzzle 1: {}", puzzle1(&input));
+    println!("Puzzle 2: {}", puzzle2(&input));
 }
 
 #[cfg(test)]
@@ -166,10 +211,4 @@ mod tests {
         let test_input = load_input("./test_input.txt");
         assert_eq!(480, puzzle1(&test_input));
     }
-
-    // #[test]
-    // fn test_puzzle2() {
-    //     let test_input = load_input("./test_input.txt");
-    //     assert_eq!(1, puzzle2(&test_input));
-    // }
 }
