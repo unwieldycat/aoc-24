@@ -74,17 +74,17 @@ fn solve_system(a: f64, b: f64, n1: f64, c: f64, d: f64, n2: f64) -> Option<f64>
     // Ax + B(x(mA - C) / (D - mB)) = N1
     // x(A + B((mA - C) / (D - mB))) = N1
     // x = N1 / (A + B((mA - C) / (D - mB)))
-    let mut x = n1 / (a + b * (((m * a) - c) / (d - (m * b))));
+    let x = n1 / (a + b * (((m * a) - c) / (d - (m * b))));
 
     // x == [[x]]
-    if (x - x.round()).abs() < 0.00001 {
-        x = x.round();
-
+    if (x - x.round()).abs() < 0.001 {
         // By = N1 - Ax
         // y = (N1 - Ax) / B
-        let y = ((n1 - (a * x)) / b).round();
+        let y = (n1 - (a * x)) / b;
 
-        return Some(x * A_COST as f64 + y * B_COST as f64);
+        if (y - y.round()).abs() < 0.001 {
+            return Some((x * A_COST as f64 + y * B_COST as f64).round());
+        }
     }
 
     return None;
