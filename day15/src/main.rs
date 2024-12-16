@@ -81,7 +81,7 @@ fn score(warehouse: &Vec<Vec<char>>) -> i32 {
     for r in 0..warehouse.len() {
         for c in 0..warehouse[r].len() {
             let value_at = warehouse[r][c];
-            if value_at == 'O' {
+            if value_at == 'O' || value_at == '[' {
                 sum += (100 * (r as i32)) + (c as i32);
             }
         }
@@ -107,12 +107,49 @@ fn puzzle1(warehouse: &Vec<Vec<char>>, movements: &Vec<char>) -> i32 {
     score(&warehouse_copy)
 }
 
-fn puzzle2() {}
+fn widen_warehouse(warehouse: &Vec<Vec<char>>) -> Vec<Vec<char>> {
+    let mut widened: Vec<Vec<char>> = Vec::new();
+    let mut new_row: Vec<char>;
+
+    for row in warehouse {
+        new_row = Vec::new();
+        for val in row {
+            match val {
+                '#' => {
+                    new_row.push('#');
+                    new_row.push('#');
+                }
+                'O' => {
+                    new_row.push('[');
+                    new_row.push(']');
+                }
+                '.' => {
+                    new_row.push('.');
+                    new_row.push('.');
+                }
+                '@' => {
+                    new_row.push('@');
+                    new_row.push('.');
+                }
+                _ => {}
+            }
+        }
+        widened.push(new_row.clone());
+    }
+
+    widened
+}
+
+fn puzzle2(warehouse: &Vec<Vec<char>>, movements: &Vec<char>) -> i32 {
+    let mut wide_warehouse = widen_warehouse(warehouse);
+
+    score(&wide_warehouse)
+}
 
 fn main() {
     let input = load_input("./input.txt");
     println!("Puzzle 1: {}", puzzle1(&input.0, &input.1));
-    // println!("Puzzle 2: {}", puzzle2(&input.0, &input.1));
+    println!("Puzzle 2: {}", puzzle2(&input.0, &input.1));
 }
 
 #[cfg(test)]
@@ -125,9 +162,9 @@ mod tests {
         assert_eq!(10092, puzzle1(&test_input.0, &test_input.1));
     }
 
-    // #[test]
-    // fn test_puzzle2() {
-    //     let test_input = load_input("./test_input.txt");
-    //     assert_eq!(1, puzzle2(&test_input));
-    // }
+    #[test]
+    fn test_puzzle2() {
+        let test_input = load_input("./test_input.txt");
+        assert_eq!(9021, puzzle2(&test_input.0, &test_input.1));
+    }
 }
