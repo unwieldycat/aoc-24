@@ -215,6 +215,7 @@ fn attempt_movement_wide(
                 return false;
             }
         } else {
+            println!("{}", pos_value);
             panic!("This should never happen");
         }
     } else if movement_mod.0.abs() > 0 {
@@ -245,14 +246,28 @@ fn puzzle2(warehouse: &Vec<Vec<char>>, movements: &Vec<char>) -> i32 {
     let mut robot_pos = find_robot(warehouse).unwrap();
 
     for movement in movements {
+        let next_pos: (i32, i32);
+        let move_mod: (i32, i32);
         if *movement == '<' {
-            attempt_movement(&mut wide_warehouse, &mut robot_pos, (-1, 0));
+            next_pos = (robot_pos.0 - 1, robot_pos.1);
+            move_mod = (-1, 0);
         } else if *movement == '^' {
-            attempt_movement(&mut wide_warehouse, &mut robot_pos, (0, -1));
+            next_pos = (robot_pos.0, robot_pos.1 - 1);
+            move_mod = (0, -1);
         } else if *movement == '>' {
-            attempt_movement(&mut wide_warehouse, &mut robot_pos, (1, 0));
+            next_pos = (robot_pos.0 + 1, robot_pos.1);
+            move_mod = (1, 0);
         } else if *movement == 'v' {
-            attempt_movement(&mut wide_warehouse, &mut robot_pos, (0, 1));
+            next_pos = (robot_pos.0, robot_pos.1 + 1);
+            move_mod = (0, 1);
+        } else {
+            panic!("Invalid movement");
+        }
+
+        let ok = attempt_movement_wide(&mut wide_warehouse, next_pos, move_mod);
+        if ok {
+            wide_warehouse[robot_pos.1 as usize][robot_pos.0 as usize] = '.';
+            wide_warehouse[next_pos.1 as usize][next_pos.0 as usize] = '@';
         }
     }
 
