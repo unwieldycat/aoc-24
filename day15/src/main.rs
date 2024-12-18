@@ -140,8 +140,121 @@ fn widen_warehouse(warehouse: &Vec<Vec<char>>) -> Vec<Vec<char>> {
     widened
 }
 
+// Check adjacent
+//  #?
+//      return false
+//  .?
+//      return true
+//  vertical?
+//      ]?
+//        call function on adjacent (x - 1, y +- 1), (x, y +- 1)
+//      [?
+//        call function on adjacent (x + 1, y +- 1), (x, y +- 1)
+//      in each case if both are movable then make (x, y) (x +- 1, y) empty and
+//       make (x, y +- 1) (x +- 1, y +- 1) a box
+//  horizontal?
+//      call function on adjacent (x +- 2, y)
+//      if can move then push all down 1?
+
+fn attempt_movement_wide(
+    warehouse: &mut Vec<Vec<char>>,
+    position: (i32, i32),
+    movement_mod: (i32, i32),
+) -> bool {
+    let pos_value = warehouse[position.1 as usize][position.0 as usize];
+    if pos_value == '#' {
+        return false;
+    }
+    if pos_value == '.' {
+        return true;
+    }
+
+    if movement_mod.1.abs() > 0 {
+        if pos_value == ']' {
+            let left_ok = attempt_movement_wide(
+                warehouse,
+                (position.0 - 1, position.1 + movement_mod.1),
+                movement_mod,
+            );
+            let right_ok = attempt_movement_wide(
+                warehouse,
+                (position.0, position.1 + movement_mod.1),
+                movement_mod,
+            );
+
+            if left_ok && right_ok {
+                warehouse[position.1 as usize][(position.0 - 1) as usize] = '.';
+                warehouse[position.1 as usize][position.0 as usize] = '.';
+                warehouse[(position.1 + movement_mod.1) as usize][(position.0 - 1) as usize] = '[';
+                warehouse[(position.1 + movement_mod.1) as usize][position.0 as usize] = ']';
+
+                return true;
+            } else {
+                return false;
+            }
+        } else if pos_value == '[' {
+            let left_ok = attempt_movement_wide(
+                warehouse,
+                (position.0, position.1 + movement_mod.1),
+                movement_mod,
+            );
+            let right_ok = attempt_movement_wide(
+                warehouse,
+                (position.0 + 1, position.1 + movement_mod.1),
+                movement_mod,
+            );
+
+            if left_ok && right_ok {
+                warehouse[position.1 as usize][(position.0 + 1) as usize] = '.';
+                warehouse[position.1 as usize][position.0 as usize] = '.';
+                warehouse[(position.1 + movement_mod.1) as usize][(position.0 + 1) as usize] = ']';
+                warehouse[(position.1 + movement_mod.1) as usize][position.0 as usize] = '[';
+
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            panic!("This should never happen");
+        }
+    } else if movement_mod.0.abs() > 0 {
+        let can_move = attempt_movement_wide(
+            warehouse,
+            (position.0 + movement_mod.0 * 2, position.1),
+            movement_mod,
+        );
+
+        if can_move {
+            let other_value = if pos_value == ']' { '[' } else { ']' };
+            warehouse[position.1 as usize][position.0 as usize] = '.';
+            warehouse[position.1 as usize][(position.0 + movement_mod.0) as usize] = pos_value;
+            warehouse[position.1 as usize][(position.0 + movement_mod.0 * 2) as usize] =
+                other_value;
+
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    false
+}
+
 fn puzzle2(warehouse: &Vec<Vec<char>>, movements: &Vec<char>) -> i32 {
     let mut wide_warehouse = widen_warehouse(warehouse);
+    let mut robot_pos = find_robot(warehouse).unwrap();
+
+    for movement in movements {
+        if *movement == '<' {
+            attempt_movement(&mut wide_warehouse, &mut robot_pos, (-1, 0));
+        } else if *movement == '^' {
+            attempt_movement(&mut wide_warehouse, &mut robot_pos, (0, -1));
+        } else if *movement == '>' {
+            attempt_movement(&mut wide_warehouse, &mut robot_pos, (1, 0));
+        } else if *movement == 'v' {
+            attempt_movement(&mut wide_warehouse, &mut robot_pos, (0, 1));
+        }
+    }
 
     score(&wide_warehouse)
 }
