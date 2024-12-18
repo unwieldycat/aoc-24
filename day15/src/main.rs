@@ -241,9 +241,22 @@ fn attempt_movement_wide(
     false
 }
 
+// println!(
+//         "{}",
+//         wide_warehouse
+//             .iter()
+//             .map(|v| v
+//                 .iter()
+//                 .map(|c| c.to_string())
+//                 .collect::<Vec<String>>()
+//                 .join(""))
+//             .collect::<Vec<String>>()
+//             .join("\n")
+//     );
+
 fn puzzle2(warehouse: &Vec<Vec<char>>, movements: &Vec<char>) -> i32 {
     let mut wide_warehouse = widen_warehouse(warehouse);
-    let mut robot_pos = find_robot(warehouse).unwrap();
+    let mut robot_pos = find_robot(&wide_warehouse).unwrap();
 
     for movement in movements {
         let next_pos: (i32, i32);
@@ -268,6 +281,8 @@ fn puzzle2(warehouse: &Vec<Vec<char>>, movements: &Vec<char>) -> i32 {
         if ok {
             wide_warehouse[robot_pos.1 as usize][robot_pos.0 as usize] = '.';
             wide_warehouse[next_pos.1 as usize][next_pos.0 as usize] = '@';
+            robot_pos.1 = next_pos.1;
+            robot_pos.0 = next_pos.0;
         }
     }
 
