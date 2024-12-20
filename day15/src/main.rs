@@ -140,23 +140,49 @@ fn widen_warehouse(warehouse: &Vec<Vec<char>>) -> Vec<Vec<char>> {
     widened
 }
 
-// Check adjacent
-//  #?
-//      return false
-//  .?
-//      return true
-//  vertical?
-//      ]?
-//        call function on adjacent (x - 1, y +- 1), (x, y +- 1)
-//      [?
-//        call function on adjacent (x + 1, y +- 1), (x, y +- 1)
-//      in each case if both are movable then make (x, y) (x +- 1, y) empty and
-//       make (x, y +- 1) (x +- 1, y +- 1) a box
-//  horizontal?
-//      call function on adjacent (x +- 2, y)
-//      if can move then push all down 1?
+fn do_move_wide(warehouse: &mut Vec<Vec<char>>, position: (i32, i32), movement_mod: (i32, i32)) {
+    let pos_value = warehouse[position.1 as usize][position.0 as usize];
+    if pos_value != ']' && pos_value != '[' {
+        return;
+    }
 
-fn attempt_movement_wide(
+    if movement_mod.1.abs() > 0 {
+        if pos_value == ']' {
+            let next_left = (position.0 - 1, position.1 + movement_mod.1);
+            let next_right = (position.0, position.1 + movement_mod.1);
+            do_move_wide(warehouse, next_left, movement_mod);
+            do_move_wide(warehouse, next_right, movement_mod);
+            warehouse[position.1 as usize][(position.0 - 1) as usize] = '.';
+            warehouse[position.1 as usize][position.0 as usize] = '.';
+            warehouse[next_left.1 as usize][next_left.0 as usize] = '[';
+            warehouse[next_right.1 as usize][next_right.0 as usize] = ']';
+        } else if pos_value == '[' {
+            let next_left = (position.0, position.1 + movement_mod.1);
+            let next_right = (position.0 + 1, position.1 + movement_mod.1);
+            do_move_wide(warehouse, next_left, movement_mod);
+            do_move_wide(warehouse, next_right, movement_mod);
+            warehouse[position.1 as usize][(position.0 + 1) as usize] = '.';
+            warehouse[position.1 as usize][position.0 as usize] = '.';
+            warehouse[next_right.1 as usize][(next_right.0) as usize] = ']';
+            warehouse[next_left.1 as usize][next_left.0 as usize] = '[';
+        } else {
+            println!("{}", pos_value);
+            panic!("This should never happen");
+        }
+    } else if movement_mod.0.abs() > 0 {
+        do_move_wide(
+            warehouse,
+            (position.0 + movement_mod.0 * 2, position.1),
+            movement_mod,
+        );
+        let other_value = if pos_value == ']' { '[' } else { ']' };
+        warehouse[position.1 as usize][position.0 as usize] = '.';
+        warehouse[position.1 as usize][(position.0 + movement_mod.0) as usize] = pos_value;
+        warehouse[position.1 as usize][(position.0 + movement_mod.0 * 2) as usize] = other_value;
+    }
+}
+
+fn can_move_wide(
     warehouse: &mut Vec<Vec<char>>,
     position: (i32, i32),
     movement_mod: (i32, i32),
@@ -171,71 +197,38 @@ fn attempt_movement_wide(
 
     if movement_mod.1.abs() > 0 {
         if pos_value == ']' {
-            let left_ok = attempt_movement_wide(
+            let left_ok = can_move_wide(
                 warehouse,
                 (position.0 - 1, position.1 + movement_mod.1),
                 movement_mod,
             );
-            let right_ok = attempt_movement_wide(
+            let right_ok = can_move_wide(
                 warehouse,
                 (position.0, position.1 + movement_mod.1),
                 movement_mod,
             );
 
-            if left_ok && right_ok {
-                warehouse[position.1 as usize][(position.0 - 1) as usize] = '.';
-                warehouse[position.1 as usize][position.0 as usize] = '.';
-                warehouse[(position.1 + movement_mod.1) as usize][(position.0 - 1) as usize] = '[';
-                warehouse[(position.1 + movement_mod.1) as usize][position.0 as usize] = ']';
-
-                return true;
-            } else {
-                return false;
-            }
+            return left_ok && right_ok;
         } else if pos_value == '[' {
-            let left_ok = attempt_movement_wide(
+            let left_ok = can_move_wide(
                 warehouse,
                 (position.0, position.1 + movement_mod.1),
                 movement_mod,
             );
-            let right_ok = attempt_movement_wide(
+            let right_ok = can_move_wide(
                 warehouse,
                 (position.0 + 1, position.1 + movement_mod.1),
                 movement_mod,
             );
 
-            if left_ok && right_ok {
-                warehouse[position.1 as usize][(position.0 + 1) as usize] = '.';
-                warehouse[position.1 as usize][position.0 as usize] = '.';
-                warehouse[(position.1 + movement_mod.1) as usize][(position.0 + 1) as usize] = ']';
-                warehouse[(position.1 + movement_mod.1) as usize][position.0 as usize] = '[';
-
-                return true;
-            } else {
-                return false;
-            }
-        } else {
-            println!("{}", pos_value);
-            panic!("This should never happen");
+            return left_ok && right_ok;
         }
     } else if movement_mod.0.abs() > 0 {
-        let can_move = attempt_movement_wide(
+        return can_move_wide(
             warehouse,
             (position.0 + movement_mod.0 * 2, position.1),
             movement_mod,
         );
-
-        if can_move {
-            let other_value = if pos_value == ']' { '[' } else { ']' };
-            warehouse[position.1 as usize][position.0 as usize] = '.';
-            warehouse[position.1 as usize][(position.0 + movement_mod.0) as usize] = pos_value;
-            warehouse[position.1 as usize][(position.0 + movement_mod.0 * 2) as usize] =
-                other_value;
-
-            return true;
-        } else {
-            return false;
-        }
     }
 
     false
@@ -277,8 +270,8 @@ fn puzzle2(warehouse: &Vec<Vec<char>>, movements: &Vec<char>) -> i32 {
             panic!("Invalid movement");
         }
 
-        let ok = attempt_movement_wide(&mut wide_warehouse, next_pos, move_mod);
-        if ok {
+        if can_move_wide(&mut wide_warehouse, next_pos, move_mod) {
+            do_move_wide(&mut wide_warehouse, next_pos, move_mod);
             wide_warehouse[robot_pos.1 as usize][robot_pos.0 as usize] = '.';
             wide_warehouse[next_pos.1 as usize][next_pos.0 as usize] = '@';
             robot_pos.1 = next_pos.1;
